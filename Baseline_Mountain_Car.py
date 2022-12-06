@@ -19,9 +19,9 @@ if __name__ == '__main__':
         MDP=MDP,
         state_size=2,
         w_hidden_sizes=w_hidden_sizes,
-        w_lr=1e-8,
+        w_lr=w_lr,
         theta_hidden_sizes=theta_hidden_sizes,
-        theta_lr=1e-8,
+        theta_lr=theta_lr,
         input_mode=input_mode
     )
     MDP.calc_optimal_v_pi(agent)
