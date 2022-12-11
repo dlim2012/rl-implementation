@@ -1,25 +1,23 @@
-
 from torch.autograd import Variable
 import torch
 import numpy as np
 
+
 def Baseline_Algorithm(
         MDP,
         agent,
-        n=10**4,
+        n=10 ** 4,
         min_sigma=1.,
         max_sigma=2.,
         print_output=0,
 ):
-
     n_episodes = 0
+    n_steps_list = []
     returns = []
-    learning_curve_1 = []
-    learning_curve_2 = []
     for i in range(n):
         n_episodes += 1
 
-        sigma = min_sigma + (max_sigma - min_sigma) * (i+1) / n
+        sigma = min_sigma + (max_sigma - min_sigma) * (i + 1) / n
         states, actions, rewards = [], [], []
 
         n_steps = 1
@@ -36,11 +34,8 @@ def Baseline_Algorithm(
             s = ns
             n_steps += 1
 
-            learning_curve_1.append(n_episodes)
-
         G = Variable(torch.tensor(0.0, dtype=torch.float32))
         n_steps = len(actions)
-
 
         for reverse_t, (s, a, r) in enumerate(zip(states[::-1], actions[::-1], rewards[::-1])):
             G = G * MDP.gamma + r
@@ -55,58 +50,52 @@ def Baseline_Algorithm(
             loss_theta = -1 * delta * log_prob * (MDP.gamma ** (n_steps - reverse_t - 1))
             agent.train_theta(loss_theta)
 
+        n_steps_list.append(n_steps)
         returns.append(G.tolist())
 
         if n_episodes == 10:
-            print(returns)
             if (np.mean(returns)) < -999.9:
-                return None, None, []
+                print(returns)
+                return []
 
         if n_episodes % 100 == 0:
-            print(len(returns), np.mean(returns[-100:]))
             if np.mean(returns[-100:]) < -999.9:
-                return None, None, []
-
-
-        if n_episodes % 10 == 0:
-            v = dict()
-            for s in MDP.S:
-                v[s] = agent.calc_values(s).tolist()[0]
-            mse = np.mean([(v[key]-MDP.optimal_values[key]) ** 2 for key in v.keys()])
-            learning_curve_2.append(mse)
+                print(returns)
+                return []
 
         if print_output > 0 and (n_episodes == 10 or n_episodes % 100 == 0):
+
             v = dict()
             for s in MDP.S:
                 v[s] = agent.calc_values(s).tolist()[0]
-            diff = [abs(v[key]-MDP.optimal_values[key]) for key in v.keys()]
+            diff = [abs(v[key] - MDP.optimal_values[key]) for key in v.keys()]
             s = MDP.get_initial_state()
             print(
                 ['w',
-                agent.w_hidden_sizes,
-                '%.2e' % agent.w_lr],
+                 agent.w_hidden_sizes,
+                 '%.2e' % agent.w_lr],
                 ['th',
-                agent.theta_hidden_sizes,
-                '%.2e' % agent.theta_lr],
+                 agent.theta_hidden_sizes,
+                 '%.2e' % agent.theta_lr],
                 [n_episodes],
-                returns[-1],
+                sum(n_steps_list) / len(n_steps_list),
                 s,
                 agent.calc_values(s),
                 'max-norm diff: %.6f' % max(diff),
                 'avg diff: %.6f' % (sum(diff) / len(diff))
             )
+            n_steps_list = []
             if print_output == 1:
                 v = dict()
                 for s in MDP.S:
                     v[s] = agent.calc_values(s).tolist()[0]
 
-                max_norm = max([abs(v[key]-MDP.optimal_values[key]) for key in v.keys()])
+                max_norm = max([abs(v[key] - MDP.optimal_values[key]) for key in v.keys()])
                 MDP.print_values(v, 'n_episodes: %d, Max-Norm: %.4f' % (n_episodes, max_norm))
                 if v[(0, 1)] != v[(0, 1)]:
                     break
             else:
                 max_norm = float('nan')
-
 
             if print_output == 1:
                 q = dict()
@@ -120,15 +109,12 @@ def Baseline_Algorithm(
                 pi = agent.get_greedy_pi(q)
                 MDP.print_pi(pi, 'n_episodes: %d, Max-Norm: %.4f' % (n_episodes, max_norm))
 
-            print(np.mean(returns[-100:]))
-
-
-    return learning_curve_1, learning_curve_2, returns
+    return returns
 
 
 if __name__ == '__main__':
     from MDPs.gridworld import get_Gridworld_MDP
-    #from MDPs.mountain_car import get_Mountain_Car_MDP
+    # from MDPs.mountain_car import get_Mountain_Car_MDP
     from agents.MLP_agent import MLP_Agent
 
     w_hidden_sizes = [50] * 2
@@ -158,6 +144,5 @@ if __name__ == '__main__':
         n=n,
         print_output=True
     )
-
 
 # HP search for mountain car 2, 3 layers converged best
