@@ -16,7 +16,7 @@ def func(w_hidden_sizes, theta_hidden_sizes, w_lr, theta_lr, input_mode, n, seed
     while True:
         start = time.time()
 
-        MDP = get_CartPole_MDP(n_bins=20)
+        MDP = get_CartPole_MDP(n_bins=50)
         agent = MLP_Agent(
             MDP=MDP,
             state_size=4,
@@ -59,10 +59,9 @@ if __name__ == '__main__':
     ##################################################################
 
     parameters = [(w_hidden_sizes, theta_hidden_sizes, w_lr, theta_lr, input_mode, n, _) for _ in range(n_runs)]
-    res = func(w_hidden_sizes, theta_hidden_sizes, w_lr, theta_lr, input_mode, n, 1)
 
-    # with Pool(processes=min(20, n_runs)) as pool:
-    #     res = pool.starmap(func, parameters)
+    with Pool(processes=min(20, n_runs)) as pool:
+        res = pool.starmap(func, parameters)
 
     save_dir = 'results'
     save_name = '1211_baseline_cartpole'
