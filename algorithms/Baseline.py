@@ -10,6 +10,8 @@ def Baseline_Algorithm(
         min_sigma=1.,
         max_sigma=2.,
         print_output=0,
+        n_steps_limit = 1000,
+        error_curves = True
 ):
 
     n_episodes = 0
@@ -24,7 +26,7 @@ def Baseline_Algorithm(
 
         n_steps = 1
         s = MDP.get_initial_state()
-        while s not in MDP.terminal_states and n_steps <= 1000:
+        while s not in MDP.terminal_states and n_steps <= n_steps_limit:
             a, log_prob = agent.get_action(s, sigma=sigma)
             ns = MDP.get_next_state(state=s, action=a)
             r = MDP.get_reward(state=s, action=a, next_state=ns)
@@ -69,11 +71,14 @@ def Baseline_Algorithm(
 
 
         if n_episodes % 10 == 0:
-            v = dict()
-            for s in MDP.S:
-                v[s] = agent.calc_values(s).tolist()[0]
-            mse = np.mean([(v[key]-MDP.optimal_values[key]) ** 2 for key in v.keys()])
-            learning_curve_2.append(mse)
+            if error_curves:
+                v = dict()
+                for s in MDP.S:
+                    v[s] = agent.calc_values(s).tolist()[0]
+                mse = np.mean([(v[key]-MDP.optimal_values[key]) ** 2 for key in v.keys()])
+                learning_curve_2.append(mse)
+            else:
+                learning_curve_2.append(np.mean(returns[-10:]))
 
         if print_output > 0 and (n_episodes == 10 or n_episodes % 100 == 0):
             v = dict()
